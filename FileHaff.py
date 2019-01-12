@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-# 引用 https://github.com/gg-z/huffman_coding
 import os
 import six
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from HaffumanUIfile import Ui_Form
+import time
 
 
 class LeafNode(object):
@@ -97,7 +97,7 @@ class WorkThread(QThread):
     """
     线程类
     """
-    trigger = pyqtSignal(str)
+    trigger = pyqtSignal(str, float)
 
     def __init__(self, flag, input_filename, output_filename, parent=None):
         super(WorkThread, self).__init__(parent)
@@ -107,13 +107,15 @@ class WorkThread(QThread):
 
     def run(self):
         if self.flag == 0:
+            last_time = time.time()
             MyHaffuman_compress = Work(self.input_filename, self.output_filename)
             reply_message = MyHaffuman_compress.haffuman_compress()
-            self.trigger.emit(reply_message)
+            self.trigger.emit(reply_message, last_time)
         else:
+            last_time = time.time()
             MyHaffuman_compress = Work(self.input_filename, self.output_filename)
             reply_message = MyHaffuman_compress.haffuman_decompress()
-            self.trigger.emit(reply_message)
+            self.trigger.emit(reply_message, last_time)
 
 
 class Work(object):
@@ -151,7 +153,7 @@ class Work(object):
 
     def write_an_int2byte(self, num_int, output):
         """
-        给一个 int类型数， 给一个文件流 一个字节一个字节的写入
+        给一个 int类型数， 给一个文件流 把int 型数据转化成bytes 写入文件
         :param num_int:
         :param output:
         :return:
@@ -203,10 +205,11 @@ class Work(object):
         # 编码哈弗曼树 编码完后  char_freq 已经编码完了
         haffuman_tree.encode_haffuman_tree(haffuman_tree.get_root(), '', char_freq)
 
-        # 如果文件只有一种字符的话 进行修正
+        # 如果文件只有一种字符的话 进行修正 
+        # 其实只有一个字符还可以继续优化 例如直接写入 （字符and size）这样更加节省空间
         if len(char_freq) == 1:
             for i in char_freq.keys():
-                char_freq[i] = '00000000'
+                char_freq[i] = '0'
 
         return char_freq
 
@@ -225,6 +228,7 @@ class Work(object):
 
         # 得到频率字典
         char_freq = self.get_freq_dict(file_data, file_size)
+        print(char_freq)
 
         # 开始写入信息
         # 写入文件总字节数：
@@ -301,7 +305,7 @@ class Work(object):
             the_value = int(freq_code, 2)
             char_freq[key] = the_value
 
-            # 得到编码字符频率字典
+        # 得到编码字符频率字典
         char_freq = self.get_encode_char_freq(char_freq)
 
         # 得到翻转后编码频率数组
@@ -341,7 +345,7 @@ class Work(object):
                     break
         # 关闭文件
         output.close()
-        return "解压完毕"
+        return "解压完毕！"
 
 
 class HaffumanForm(QWidget, Ui_Form):
@@ -391,14 +395,20 @@ class HaffumanForm(QWidget, Ui_Form):
             self.lineEdit.setText(self.input_filename)
             self.pushButton_decompress.setEnabled(True)
 
-    def stop_thread(self, reply):
+    def stop_thread(self, reply, last_time):
         """
         线程结束 打印线程结束的提示信息 退出线程
         :param reply:
         :return:
         """
+        # 计算耗时
+        now_time = time.time()
+        cost_time = now_time - last_time
+
         self.textBrowser_message.append(reply)
+        self.textBrowser_message.append('耗时： ' + str(cost_time) + 's')
         self.work_thread.quit()
+
 
     def compress(self):
         """

@@ -8,6 +8,7 @@
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
+
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
@@ -45,7 +46,6 @@ class Ui_Form(object):
 
         self.retranslateUi(Form)
         QtCore.QMetaObject.connectSlotsByName(Form)
-        
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
@@ -56,4 +56,3 @@ class Ui_Form(object):
         self.label_decompress.setText(_translate("Form", "请选择要解压的文件"))
         self.pushButton_decompress_path_.setText(_translate("Form", "打开"))
         self.pushButton_decompress.setText(_translate("Form", "解压"))
-

@@ -5,7 +5,7 @@ import six
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 from HaffumanUIfolder import Ui_Form
-
+import time
 
 class Folder(object):
     """
@@ -180,7 +180,7 @@ class Work(object):
         # 如果文件只有一种字符的话 进行修正
         if len(char_freq) == 1:
             for i in char_freq.keys():
-                char_freq[i] = '00000000'
+                char_freq[i] = '0'
 
         return char_freq
 
@@ -396,6 +396,7 @@ def folder_compress(path, folder_path, file_list, output_file_name):
     # 写入根路径的名称
     output.write(bytes(path, 'utf8'))
 
+    # 写入根路径下文件夹和文件的个数
     write_an_int2byte(len(folder_path), output)
     write_an_int2byte(len(file_list), output)
 
@@ -429,6 +430,7 @@ def compress(path, output):
     cla_folder_list = []
     folder_names = []
     # print(path)
+    # get_files 只能获得给定path下所有的文件夹和文件 本身并不能包含自身（path）根路径
     get_files(path, cla_folder_list)
     for i in cla_folder_list:
         if len(i.folder_list) > 0:
@@ -446,9 +448,11 @@ def compress(path, output):
                 # 这个可以切掉
                 # file_name = '.' + file_name[len(path):]
                 file_names.append(file_name)
-
+    # get_files 只能获得给定path下所有的文件夹和文件 本身并不能包含自身（path）根路径 在folder_names 前面填上根路径
+    # 在文件夹列表的头部追加根路径
+    folder_names.insert(0, path)
+    # print(path)
     # print(folder_names, file_names)
-    # exit()
     folder_compress(path, folder_names, file_names, output)
     return "压缩完毕"
 
@@ -475,10 +479,11 @@ def decompress(path):
     :param path:
     :return:
     """
-    # 得到根路径长度
     length_int = 4
     f = open(path, 'rb')
     file_data = f.read()
+
+    # 得到根路径长度
     total_byte_code = ''
     for i in range(0, length_int):
         tmp = bin(file_data[i])[2:]
@@ -527,11 +532,11 @@ def decompress(path):
         all_folders.append(folder_name)
 
     for j in range(0, file_length):
-        folder_name_end = get_files_folds(file_data, start, end)
-        folder_name = folder_name_end[0]
-        start = int(folder_name_end[1])
+        file_name_end = get_files_folds(file_data, start, end)
+        file_name = file_name_end[0]
+        start = int(file_name_end[1])
         end = start + 4
-        all_files.append(folder_name)
+        all_files.append(file_name)
 
     # print(all_files)
     # print(all_folders)
@@ -556,7 +561,7 @@ class WorkThread(QThread):
     """
     线程类
     """
-    trigger = pyqtSignal(str)
+    trigger = pyqtSignal(str, float)
 
     def __init__(self, flag, input_filename, output_filename, parent=None):
         super(WorkThread, self).__init__(parent)
@@ -566,11 +571,13 @@ class WorkThread(QThread):
 
     def run(self):
         if self.flag == 0:
+            last_time = time.time()
             reply_message = compress(self.input_filename, self.output_filename)
-            self.trigger.emit(reply_message)
+            self.trigger.emit(reply_message, last_time)
         else:
+            last_time = time.time()
             reply_message = decompress(self.input_filename)
-            self.trigger.emit(reply_message)
+            self.trigger.emit(reply_message, last_time)
 
 
 class HaffumanForm(QWidget, Ui_Form):
@@ -620,13 +627,18 @@ class HaffumanForm(QWidget, Ui_Form):
             self.lineEdit.setText(self.input_folder_name)
             self.pushButton_decompress.setEnabled(True)
 
-    def stop_thread(self, reply):
+    def stop_thread(self, reply, last_time):
         """
         线程结束 打印线程结束的提示信息 退出线程
         :param reply:
         :return:
         """
+        # 计算耗时
+        now_time = time.time()
+        cost_time = now_time - last_time
+
         self.textBrowser_message.append(reply)
+        self.textBrowser_message.append('耗时： ' + str(cost_time) + 's')
         self.work_thread.quit()
 
     def compress(self):
@@ -682,7 +694,7 @@ class HaffumanForm(QWidget, Ui_Form):
             else:
                 # 如果要覆盖就级联删除掉
                 shutil.rmtree(self.output_folder_name)
-
+        
         # UI 与逻辑分开 防止UI 卡顿 开辟线程
         self.work_thread = WorkThread(1, self.input_folder_name, self.output_folder_name)
         self.work_thread.trigger.connect(self.stop_thread)
