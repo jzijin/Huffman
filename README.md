@@ -1,6 +1,8 @@
 # 哈弗曼压缩文件和文件夹的项目！
+## ./bin
+    此目录下存放编译完的exe文件
 ***
-## FileHaff.py
+## FileHuff.py
     这个文件是压缩单个文件的程序
     使用方法：
         python FileHaff.py 
@@ -17,14 +19,12 @@
     解压完之后 会在选择路径还原压缩文件夹
     需要安装 pyqt5 库
 ***
-## haffuman.ui  
+## Huffuman.ui  
     单文件压缩和文件夹压缩的界面 XML文件
 ***
-## HaffumanUIfile.py 
+## HuffmanUIfile.py 
     单文件压缩的界面翻译成Python的文件
 ***
-## HaffumanUIfolder.py 
+## HuffmanUIfolder.py 
     文件夹压缩的界面翻译成Python的文件
 ***
-## 课程设计.docx
-    课程设计报告

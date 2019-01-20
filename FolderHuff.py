@@ -4,8 +4,9 @@ import sys
 import six
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
-from HaffumanUIfolder import Ui_Form
+from HuffmanUIfolder import Ui_Form
 import time
+
 
 class Folder(object):
     """
@@ -694,7 +695,7 @@ class HaffumanForm(QWidget, Ui_Form):
             else:
                 # 如果要覆盖就级联删除掉
                 shutil.rmtree(self.output_folder_name)
-        
+
         # UI 与逻辑分开 防止UI 卡顿 开辟线程
         self.work_thread = WorkThread(1, self.input_folder_name, self.output_folder_name)
         self.work_thread.trigger.connect(self.stop_thread)
